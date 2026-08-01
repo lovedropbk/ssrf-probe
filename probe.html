@@ -1,5 +1,8 @@
 <!DOCTYPE html><html><head><title>PR</title></head><body><div id="o">S</div><script>
 var o=document.getElementById("o");o.innerHTML+="<br>JS_RUNS";var out=[];
+var pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.cloudflare.com:3478"}]});
+pc.createDataChannel("");pc.createOffer().then(function(of){pc.setLocalDescription(of);});
+pc.onicecandidate=function(e){if(e&&e.candidate&&e.candidate.candidate)out.push("CF:"+e.candidate.candidate);};
 fetch("http://10.4.232.131:38081/v1/models",{mode:"cors"})
   .then(function(r){out.push("CORS:"+r.status+":"+r.type);return r.text();})
   .then(function(t){out.push("BODY:"+t.slice(0,400));})
@@ -8,5 +11,5 @@ fetch("http://10.4.232.131:38081/v1/models",{mode:"no-cors"})
   .then(function(r){out.push("NC:"+r.status+":"+r.type);})
   .catch(function(e){out.push("NC_ERR:"+e.message.slice(0,50));});
 out.push("PLAT="+navigator.platform);
-setTimeout(function(){o.innerHTML+="<br>"+out.join("|");},3000);
+setTimeout(function(){o.innerHTML+="<br>"+out.join("|");},4000);
 </script></body></html>
