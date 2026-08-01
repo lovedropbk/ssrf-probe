@@ -1,0 +1,8 @@
+<!DOCTYPE html><html><head><title>STUN</title></head><body><div id="o">S</div><script>
+var o=document.getElementById("o");o.innerHTML+="<br>JS_RUNS";var out=[];
+var pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.cloudflare.com:3478"}]});
+pc.createDataChannel("");pc.createOffer().then(function(of){pc.setLocalDescription(of);});
+pc.onicecandidate=function(e){if(e&&e.candidate&&e.candidate.candidate)out.push("CF:"+e.candidate.candidate);};
+out.push("PLAT="+navigator.platform);out.push("HW="+navigator.hardwareConcurrency);
+setTimeout(function(){o.innerHTML+="<br>"+out.join("|");},2000);
+</script></body></html>
